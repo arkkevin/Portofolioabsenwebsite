@@ -65,7 +65,77 @@ if ($_GET['CONTAINER']) {
     header('Location: gatepass_eticket.php?ID=' . $d_id);
     exit;
   }
+
+  //menampilkan waktu tapping
+  // $sql = "UPDATE tx_transactions 
+  //           SET gatein_datetime = SYSDATE() 
+  //             WHERE id = '12'";
+
+  // $result = $conn->query($sql);
+
+  // if ($conn->query($sql) === TRUE) {
+  //   echo "Record updated successfully";
+  // } else {
+  //   echo "Error updating record: " . $conn->error;
+  // }
+
+
+  // $conn->close();
+
+  // if ($_POST['barcode'] !== NULL) {
+  //   "UPDATE tx_transactions 
+  //             SET gatein_datetime = SYSDATE() 
+  //               WHERE id = '12'";
+  // }
 }
+// print_r($_POST);
+// echo $_POST['barcode'];
+
+if ($_POST['barcode'] !== NULL || $_POST['barcode'] !== '') {
+  $barcode = $_POST['barcode'];
+
+  $sql = "SELECT * FROM tx_transactions
+            WHERE id = '" . $barcode . "'";
+  $result = $conn->query($sql);
+
+  if ($result->num_rows > 0) {
+    // output data of each row
+    while ($row = $result->fetch_assoc()) {
+      $d_REMAKS = $row["REMAKS"];
+      $d_id = $row["id"];
+      $d_cntr_id = $row["cntr_id"];
+      $d_gatein_datetime = $row["gatein_datetime"];
+
+      if($d_gatein_datetime == NULL) {
+        $sql = "UPDATE tx_transactions 
+        SET gatein_datetime = SYSDATE() 
+        WHERE id = '$barcode'";
+        $s_gate = 'Gate In';
+      } else {
+        $sql = "UPDATE tx_transactions 
+        SET gateout_datetime = SYSDATE() 
+        WHERE id = '$barcode'";
+        $s_gate = 'Gate Out';
+      }
+
+      //gate in/out
+      if ($conn->query($sql) === TRUE) {
+        $r_STATUS = TRUE;
+        $r_MESSAGE = "Transaction ".$s_gate." successfully";
+      } else {
+        $r_STATUS = FALSE;
+        $r_MESSAGE = "Error: " . $conn->error;
+      }
+    }
+  } else {
+    $r_STATUS = FALSE;
+    $r_MESSAGE = "Nomor ID tidak terdaftar";
+  }
+} else {
+  $r_STATUS = FALSE;
+  $r_MESSAGE = "Nomor ID Kosong";
+}
+
 ?>
 <!doctype html>
 <html lang="en" data-bs-theme="auto">
@@ -87,19 +157,19 @@ if ($_GET['CONTAINER']) {
 
   <style>
     .bg-body-tertiary {
-      background-color: 	#87CEFA !important;
+      background-color: #87CEFA !important;
     }
 
-   h1{
+    h1 {
       color: #000000 !important;
     }
 
-    label{
+    label {
       color: #000000 !important;
     }
 
-    p{
-      color: #000000;
+    p {
+      color: #00FFFF;
     }
 
     .btn-danger {
@@ -262,7 +332,7 @@ if ($_GET['CONTAINER']) {
 
 
   <main class="form-signin w-100 m-auto">
-    <form>
+    <form action="" method="POST">
       <center><img class="mb-4" src="TPK-KOJA.png" alt="" width="400" height="150"></center>
       <h1 class="h3 mb-3 fw-normal">Go Ship</h1>
       <label for="floatingInput">Container ID</label>
@@ -273,7 +343,7 @@ if ($_GET['CONTAINER']) {
 
       </div>
 
-      <marquee><img src="truck-pict.png" width ="200" height ="200" /></marquee>
+      <marquee><img src="truck-pict.png" width="200" height="200" /></marquee>
       <!-- <br>
     <label for="floatingInput">Truck Number</label>
     <div class="form-floating">
@@ -291,37 +361,7 @@ if ($_GET['CONTAINER']) {
     </form>
     <?php
     if ($r_STATUS == TRUE) {
-    ?>
-      <div class="gatepass">
-        <div class="col-md-12 tx-9 bg-light text-dark">
-          <center>
-            <h3>GATEPASS</h3>
-          </center>
-        </div>
-        <div class="col-md-12 tx-9 bg-light text-dark" style="margin-top: -8px;">
-          <div class="row">
-            <div class="col-md-5"><img src="gatepass.php?ID=<?php echo $CNTR_ID . '_' . $TRUCK_ID; ?>" alt="" height="100px" width="100px" /></div>
-            <div class="col-md-7">
-              <div class="pd-5 pd-t-10 mg-5">
-                <h5><?php echo $CNTR_ID; ?></h5><br>
-                <?php echo '22G1'; ?><br>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-12 tx-9 bg-primary text-white">
-          <div class="container pd-5">
-            <?php //echo 'DUMMYK'; 
-            ?><br>
-            <?php //echo 'Voy. DUMMY KOJA 001'; 
-            ?><br>
-            <hr>
-            <center><?php //echo 'SGSIN / SGSIN'; 
-                    ?></center><br>
-          </div>
-        </div>
-      </div>
-    <?php
+      echo '<h4 class="btn-success">' . $r_MESSAGE . '</h4>';
     } else {
       echo '<h4 class="btn-danger">' . $r_MESSAGE . '</h4>';
     }

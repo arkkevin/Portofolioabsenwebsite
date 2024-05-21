@@ -2,69 +2,31 @@
 // panggil koneksi sql
 include 'conn.php';
 
-// setelah di submit
-if($_GET['CONTAINER']) {
-    // print_r($_GET);
-    $CNTR_ID = $_GET['CONTAINER'];
-    $TRUCK_ID = $_GET['TRUCK_ID'];
-    
-    $sql = "SELECT * FROM tx_container
-            WHERE cntr_id = '".$CNTR_ID."'";
-    $result = $conn->query($sql);
-    if ($result->num_rows > 0) {
-      // output data of each row
-      while($row = $result->fetch_assoc()) {
-          $d_REMAKS = $row["REMAKS"];
-          $d_id = $row["id"];
-          $d_cntr_id = $row["cntr_id"];
-      }
-    } else {
-      $r_STATUS = FALSE;
-      $r_MESSAGE = "Gagal Transaction!!!";
-    }
-    
-    // proses melakukan insert sql
-    if($d_REMAKS == NULL) {
-        $sql = "INSERT INTO tx_transactions (cntr_id, created_by, truck_id)
-                VALUES ($d_id, 'MANUAL', '$TRUCK_ID')";
-        
-        if ($conn->query($sql) === TRUE) {
-            $r_STATUS = TRUE;
-            $r_MESSAGE = "Transaction insert successfully";
-          
-            $sql = "UPDATE tx_container set REMAKS = 'X'
-                    WHERE id = $d_id";
-        
-            if ($conn->query($sql) === TRUE) {
-                $r_STATUS = TRUE;
-                $r_MESSAGE = "Transaction update successfully";
-                
-                $sql = "SELECT id FROM tx_transactions
-                        WHERE cntr_id = '".$d_id."'";
-                $result = $conn->query($sql);
-                if ($result->num_rows > 0) {
-                  while($row = $result->fetch_assoc()) {
-                      $d_id = $row["id"];
-                  }
-                } else {
-                  $r_STATUS = FALSE;
-                  $r_MESSAGE = "Gagal muat halaman!!!";
-                }
-                
-                header('Location: gatepass_eticket.php?ID='.$d_id);
-                exit;
-            } else {
-                $r_STATUS = FALSE;
-                $r_MESSAGE = "Error: " . $conn->error;
-            }
-        } else {
-          $r_STATUS = FALSE;
-          $r_MESSAGE = "Error: " . $conn->error;
-        }
-    } else {
-        header('Location: gatepass_eticket.php?ID='.$d_id);
-        exit;
-    }
+// grep data eticket
+$g_id = $_GET[ID];
+$sql = "SELECT B.*, A.id, A.truck_id FROM tx_transactions A INNER JOIN tx_container B ON A.cntr_id = B.id
+        WHERE A.id = '".$g_id."'";
+$result = $conn->query($sql);
+if ($result->num_rows > 0) {
+  while($row = $result->fetch_assoc()) {
+      $d_id = $row["id"];
+      $CNTR_ID = $row["cntr_id"];
+      $TRUCK_ID = $row["truck_id"];
+      $r_cntr_type = $row["cntr_type"];
+      $r_vessel = $row["vessel"];
+      $r_voyage = $row["voyage"];
+      $r_shipper = $row["shipper"];
+      $r_POL = $row["POL"];
+      $r_FD = $row["FD"];
+      $r_ATB = $row["ATB"];
+      $r_CREATED = $row["CREATED"];
+  }
+  
+  $r_STATUS = TRUE;
+  $r_MESSAGE = "Success muat halaman!!!";
+} else {
+  $r_STATUS = FALSE;
+  $r_MESSAGE = "Gagal muat halaman!!!";
 }
 ?>
 <!doctype html>
@@ -81,9 +43,12 @@ if($_GET['CONTAINER']) {
     <link rel="canonical" href="https://getbootstrap.com/docs/5.3/examples/sign-in/">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@docsearch/css@3">
 
-<link href="assets/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <style>
+        .bg-light {
+            background: #ffffff !important;
+        }
         .btn-danger {
             color:red;
         }
@@ -171,7 +136,6 @@ if($_GET['CONTAINER']) {
         display: block !important;
       }
     </style>
-
     
     <!-- Custom styles for this template -->
     <link href="sign-in.css" rel="stylesheet">
@@ -230,80 +194,44 @@ if($_GET['CONTAINER']) {
 
     
 <main class="form-signin w-100 m-auto">
-  <form>
-  <center><img class="mb-4" src="TPK-KOJA.png" alt="" width="400" height="150"></center>
-    <h1 class="h3 mb-3 fw-normal">eTicket Gatepass</h1>
-    <label for="floatingInput">Container</label>
-    <div class="form-floating">
-      <!--<input type="email" class="form-control" id="floatingInput" placeholder="name@example.com">-->
-      
-        <?php
-        $sql = "SELECT * FROM tx_container";
-        $result = $conn->query($sql);
-        if ($result->num_rows > 0) {
-          // output data of each row
-          while($row = $result->fetch_assoc()) {
-              $d_cntr_id = $row["cntr_id"];
-              $d_cntr_type = $row["cntr_type"];
-                echo '<div class="form-check">
-                      <input class="form-check-input" type="radio" name="CONTAINER" id="'.$d_cntr_id.'" value="'.$d_cntr_id.'">
-                      <label class="form-check-label" for="'.$d_cntr_id.'">
-                        '.$d_cntr_id.' : '.$d_cntr_type.'
-                      </label>
-                    </div>';
-          }
-        } else {
-          echo "0 Container";
-        }
-        ?>
-    </div>
-    <br>
-    <label for="floatingInput">Truck Number</label>
-    <div class="form-floating">
-      <input type="text" class="form-control" id="truck" name="TRUCK_ID" placeholder="truck" minlength="5" minlength="8">
-      <label for="truck">Truck Number</label>
-    </div>
-
-    <div class="form-check text-start my-3">
-      <input class="form-check-input" type="checkbox" value="remember-me" id="flexCheckDefault" required>
-      <label class="form-check-label" for="flexCheckDefault">
-        Saya setuju dengan transaksi tersebut.
-      </label>
-    </div>
-    <button class="btn btn-primary w-100 py-2" type="submit">Submit</button>
-  </form>
   <?php
   if($r_STATUS == TRUE) {
   ?>
-      <div class="gatepass">
-        <div class="col-md-12 tx-9 bg-light text-dark">
-            <center><h3>GATEPASS</h3></center>
-        </div>
-        <div class="col-md-12 tx-9 bg-light text-dark" style="margin-top: -8px;">
-            <div class="row">
-                <div class="col-md-5"><img src = "gatepass.php?ID=<?php echo $CNTR_ID.'_'.$TRUCK_ID; ?>" alt="" height="100px" width="100px"/></div>
-                <div class="col-md-7">
-                    <div class="pd-5 pd-t-10 mg-5">
-                        <h5><?php echo $CNTR_ID; ?></h5><br>
-                        <?php echo '22G1'; ?><br>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-12 tx-9 bg-primary text-white">
-            <div class="container pd-5">
-            <?php //echo 'DUMMYK'; ?><br>
-            <?php //echo 'Voy. DUMMY KOJA 001'; ?><br>
-            <hr>
-            <center><?php //echo 'SGSIN / SGSIN'; ?></center><br>
-            </div>
-        </div>
-      </div>
+      <!--<div class="gatepass">-->
+      <!--  <div class="col-md-12 tx-9 bg-light text-dark">-->
+      <!--      <center><h3>GATEPASS</h3></center>-->
+      <!--  </div>-->
+      <!--  <div class="col-md-12 tx-9 bg-light text-dark" style="margin-top: -8px;">-->
+      <!--      <div class="row">-->
+      <!--          <div class="col-md-5"><img src = "gatepass.php?ID=<?php echo $d_id.'_'.$CNTR_ID.'_'.$TRUCK_ID; ?>" alt="" height="100px" width="100px"/><br>-->
+      <!--          <span>&nbsp;&nbsp;<?php echo $r_CREATED; ?></span></div>-->
+      <!--          <div class="col-md-7">-->
+      <!--              <div class="pd-5 pd-t-10 mg-5">-->
+      <!--                  <h5><?php echo $CNTR_ID; ?></h5>-->
+      <!--                  <?php echo $r_cntr_type; ?><br><br>-->
+      <!--                  <?php echo $r_shipper; ?>-->
+      <!--              </div>-->
+      <!--          </div>-->
+      <!--      </div>-->
+      <!--  </div>-->
+      <!--  <div class="col-md-12 tx-9 bg-primary text-white">-->
+      <!--      <div class="container pd-5"><br>-->
+      <!--      <?php //echo 'Vess '.$r_vessel; ?><br>-->
+      <!--      <?php //echo 'Voy. '.$r_voyage; ?><br>-->
+      <!--      <?php //echo 'ATB. '.$r_ATB; ?>-->
+      <!--      <hr>-->
+      <!--      <center><?php //echo $r_POL.'  -  '.$r_FD; ?></center><br>-->
+      <!--      </div>-->
+      <!--  </div>-->
+      <!--</div>-->
+      <iframe src="eticket.php?ID=<?php echo $d_id;?>" frameborder="0" style="overflow:hidden;height:150%;width:150%" height="150%" width="150%"></iframe>
   <?php
   } else {
       echo '<h4 class="btn-danger">'.$r_MESSAGE.'</h4>';
   }
   ?>
+    <br>
+    <a href="index.php" class="btn btn-warning w-100 py-2" type="submit">Back</a>
     <p class="mt-5 mb-3 text-body-secondary">&copy; 2023</p>
 </main>
 <script src="assets/dist/js/bootstrap.bundle.min.js"></script>
